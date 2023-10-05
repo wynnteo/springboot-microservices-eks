@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  labels:
+    app: order-service
+    environment: production
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: order-service
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION_ID>.amazonaws.com/order-microservices
+        ports:
+        - containerPort: 8082
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8082
+          initialDelaySeconds: 90
+          periodSeconds: 35
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8082
+          initialDelaySeconds: 90
+          periodSeconds: 35
+        env:
+        - name: ENVIRONMENT
+          value: production
+        - name: DATABASE_NAME
+          value: springbootmicroservicesdb
+        - name: DATABASE_PORT
+          value: "3306"
+        - name: DATABASE_USER_NAME
+          value: dbadmin
+        - name: DATABASE_USER_PASSWORD
+          value: password
+        - name: HOST_NAME
+          value: <RDS_ENDPOINT>
+        - name: SPRING_PROFILES_ACTIVE
+          value: prod
+        - name: products.url
+          value: http://product-service.default.svc.cluster.local/api/products
